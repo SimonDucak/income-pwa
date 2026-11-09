@@ -1,5 +1,15 @@
-const CACHE = 'income-shell-v1'
-const SHELL = ['/', '/index.html', '/manifest.json', '/assets/icon.svg']
+const CACHE = 'income-shell-v2'
+const SHELL = [
+  './',
+  './index.html',
+  './manifest.json',
+  './assets/icon.svg',
+  './css/styles.css',
+  './js/calculations.js',
+  './js/database.js',
+  './js/app.js',
+  './vendor/sql-wasm-inline.js',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()))
@@ -16,9 +26,9 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(fetch(request).then((response) => {
-      if (response.ok) caches.open(CACHE).then((cache) => cache.put('/index.html', response.clone()))
+      if (response.ok) caches.open(CACHE).then((cache) => cache.put('./index.html', response.clone()))
       return response
-    }).catch(async () => (await caches.match(request)) || (await caches.match('/index.html'))))
+    }).catch(async () => (await caches.match(request)) || (await caches.match('./index.html'))))
     return
   }
 

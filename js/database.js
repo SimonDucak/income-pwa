@@ -1,6 +1,4 @@
-import initSqlJs from 'sql.js'
-import wasmUrl from 'sql.js/dist/sql-wasm.wasm?url'
-
+// initSqlJs comes from vendor/sql-wasm-inline.js, loaded by index.html.
 const DB_VERSION = 1
 const DB_NAME = 'income-counter-preferences'
 const STORE = 'handles'
@@ -29,8 +27,10 @@ let connected = false
 let filename = ''
 let lastBackupReminder = Date.now()
 
-export async function initializeSql() {
-  if (!SQL) SQL = await initSqlJs({ locateFile: () => wasmUrl })
+async function initializeSql() {
+  if (SQL) return
+  if (typeof initSqlJs !== 'function') throw new Error('SQLite failed to load. Check that vendor/sql-asm.js is next to this site.')
+  SQL = await initSqlJs()
 }
 
 function openPreferences() {
@@ -62,8 +62,8 @@ async function setHandle(handle) {
   } catch { /* Remembering a handle is optional. */ }
 }
 
-export function getDb() { return db }
-export function getStatus() {
+function getDb() { return db }
+function getStatus() {
   return { state: !db ? 'disconnected' : (connected ? 'connected' : 'import'), dirty, filename }
 }
 
@@ -100,7 +100,7 @@ async function attach(bytes, handle, name) {
   return getStatus()
 }
 
-export async function reconnect() {
+async function reconnect() {
   if (!window.showOpenFilePicker) return false
   const handle = await getHandle()
   if (!handle) return false
@@ -115,10 +115,10 @@ export async function reconnect() {
   } catch { return false }
 }
 
-export async function openPickedFile(file) {
+async function openPickedFile(file) {
   return attach(new Uint8Array(await file.arrayBuffer()), null, file.name)
 }
-export async function openHandle(handle) {
+async function openHandle(handle) {
   const permission = await handle.requestPermission({ mode: 'readwrite' })
   if (permission !== 'granted') throw new Error('Write access was not granted. You can continue in export mode.')
   const file = await handle.getFile()
@@ -126,7 +126,7 @@ export async function openHandle(handle) {
   connected = true
   return getStatus()
 }
-export async function createNewDatabase() {
+async function createNewDatabase() {
   await initializeSql()
   const fresh = new SQL.Database()
   fresh.run(SCHEMA)
@@ -138,31 +138,31 @@ export async function createNewDatabase() {
   connected = false
   return getStatus()
 }
-export async function loadTemplate(url) {
+async function loadTemplate(url) {
   const response = await fetch(url)
   if (!response.ok) throw new Error('Could not load the database template.')
   return attach(new Uint8Array(await response.arrayBuffer()), null, 'database-template.sqlite')
 }
 
-export function transaction(callback) {
+function transaction(callback) {
   if (!db) throw new Error('Select a database first.')
   db.run('BEGIN IMMEDIATE')
   try { const result = callback(db); db.run('COMMIT'); dirty = true; return result }
   catch (error) { db.run('ROLLBACK'); throw error }
 }
-export async function save() {
+async function save() {
   if (!db) throw new Error('No database is connected.')
   if (!fileHandle || !connected) { dirty = true; return { written: false } }
   const writable = await fileHandle.createWritable()
   try { await writable.write(db.export()); await writable.close(); dirty = false; return { written: true } }
   catch (error) { await writable.abort?.(); connected = false; dirty = true; throw error }
 }
-export function exportBytes() { if (!db) throw new Error('No database is connected.'); return db.export() }
-export async function disconnect() {
+function exportBytes() { if (!db) throw new Error('No database is connected.'); return db.export() }
+async function disconnect() {
   db?.close(); db = null; fileHandle = null; connected = false; dirty = false; filename = ''
   try { const idb = await openPreferences(); await new Promise((resolve) => { const request = idb.transaction(STORE, 'readwrite').objectStore(STORE).delete('database'); request.onsuccess = resolve; request.onerror = resolve }) } catch { /* optional */ }
 }
-export function shouldRemindBackup() {
+function shouldRemindBackup() {
   if (Date.now() - lastBackupReminder > 7 * 24 * 60 * 60 * 1000) { lastBackupReminder = Date.now(); return true }
   return false
 }

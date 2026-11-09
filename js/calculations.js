@@ -1,10 +1,10 @@
-export const money = (cents) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format((cents || 0) / 100)
-export const amountText = (amount, type) => type === 'EUR'
+const money = (cents) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format((cents || 0) / 100)
+const amountText = (amount, type) => type === 'EUR'
   ? money(amount)
   : `${new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(amount / 100)}%`
 
 // Monetary values and configured values are stored in hundredths (cents / basis points).
-export function calculate(income, expenses) {
+function calculate(income, expenses) {
   let remaining = income
   let fixed = 0
   let percentage = 0
@@ -20,8 +20,8 @@ export function calculate(income, expenses) {
   return { rows, fixed, percentage, total: fixed + percentage, remaining }
 }
 
-export function nextMonth(year, month) {
+function nextMonth(year, month) {
   return month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 }
 }
 
-export const monthName = (year, month, style = 'long') => new Intl.DateTimeFormat('en', { month: style, year: 'numeric' }).format(new Date(year, month - 1, 1))
+const monthName = (year, month, style = 'long') => new Intl.DateTimeFormat('en', { month: style, year: 'numeric' }).format(new Date(year, month - 1, 1))

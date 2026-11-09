@@ -1,10 +1,3 @@
-import { amountText, calculate, money, monthName, nextMonth } from './calculations.js'
-import { createNewDatabase, disconnect, exportBytes, getDb, getStatus, openHandle, openPickedFile, reconnect, save, shouldRemindBackup, transaction } from './database.js'
-import './styles.css'
-import './extended.css'
-import './responsive.css'
-import './layout.css'
-
 const app = document.querySelector('#app')
 let screen = 'dashboard'
 let selectedId = null
@@ -24,7 +17,7 @@ function shell(content) {
 }
 
 function welcome() {
-  return `<section class="welcome"><div class="welcome-art"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="art-card"><span>MONTHLY BALANCE</span><strong>€ 2.840,00</strong><i></i><i></i><i></i></div><span class="spark spark-one">✳</span><span class="spark spark-two">✦</span></div><p class="eyebrow">A CLEARER WAY TO PLAN</p><h1>Your money,<br><em>in balance.</em></h1><p class="welcome-copy">A calm, private space to make sense of what comes in and what goes out. Your data stays on your device, always.</p><div class="welcome-actions"><button class="button button-primary" data-action="download-template">↓ &nbsp;Download a new database</button><button class="button button-secondary" data-action="pick-file">↗ &nbsp;Select an existing database</button></div><p class="welcome-footnote">⌑ &nbsp;No account needed. Works offline. Yours to keep.</p></section>`
+  return `<section class="welcome"><div class="welcome-art"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="art-card"><span>MONTHLY BALANCE</span><strong>€ 2.840,00</strong><i></i><i></i><i></i></div><span class="spark spark-one">✳</span><span class="spark spark-two">✦</span></div><div class="welcome-body"><p class="eyebrow">A CLEARER WAY TO PLAN</p><h1>Your money,<br><em>in balance.</em></h1><p class="welcome-copy">A calm, private space to make sense of what comes in and what goes out. Your data stays on your device, always.</p><div class="welcome-actions"><button class="button button-primary" data-action="download-template">↓ &nbsp;Download a new database</button><button class="button button-secondary" data-action="pick-file">↗ &nbsp;Select an existing database</button></div><p class="welcome-footnote">⌑ &nbsp;No account needed. Works offline. Yours to keep.</p></div></section>`
 }
 
 function dashboard() {
@@ -185,12 +178,17 @@ document.addEventListener('submit', async event => {
 })
 
 async function boot() {
-  try {
-    await reconnect()
-    if (getStatus().state === 'connected') selectedId = months()[0]?.id || null
-  } catch { /* A remembered handle may require a user gesture; settings can reconnect it. */ }
   render()
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {})
+  try {
+    const restored = await reconnect()
+    if (restored && getStatus().state === 'connected') {
+      selectedId = months()[0]?.id || null
+      render()
+    }
+  } catch { /* A remembered handle may require a user gesture; settings can reconnect it. */ }
+  if ('serviceWorker' in navigator && (location.protocol === 'http:' || location.protocol === 'https:')) {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {})
+  }
   if (getStatus().dirty && shouldRemindBackup()) toast('A quick reminder: export a backup of your database now and then.')
 }
 boot()
